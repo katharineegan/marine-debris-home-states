@@ -39,5 +39,24 @@ clean_summary_data(summary_list)
 Cleanup marine debris metrics:
 ```{r}
 # clean up PPM data (people, pounds, miles, # of bags)
-ppm <- clean_ppm_data(ppm_list)
+# also split up into two separate data frames
+clean_ppm_data(ppm_list)
 ```
+
+Aggregate marine debris data by year and location (sum the total amount of debris), join the ppm data to the aggregated data frame, calculate debris density (pounds per mile), and calculate debris density per person (pounds per mile per person)
+```{r}
+# 2008-2012
+md_ppm_0812 <- md_0812 %>% group_by(year, location) %>% 
+  summarise(total_sum = sum(total)) %>% 
+  full_join(ppm_0812) %>% 
+  mutate(debris_density = total_sum/miles,
+         debris_density_person = debris_density/people)
+
+# 2013-2015
+md_ppm_1315 <- md_1315 %>% group_by(year, location) %>% 
+  summarise(total_sum = sum(total)) %>% 
+  full_join(ppm_1315) %>% 
+  mutate(debris_density = total_sum/miles,
+         debris_density_person = debris_density/people)
+```
+
