@@ -1,0 +1,43 @@
+---
+title: "Marine Debris by Home States"
+author: "Katharine Egan"
+output: html_document
+---
+
+Libraries and functions:
+```{r}
+library(tidyverse)
+library(readxl)
+
+# read in functions needed to clean data 
+source("scripts/functions/clean_summary_data.R")
+source("scripts/functions/clean_ppm_data.R")
+source("scripts/functions/read_in_rawdata.R")
+```
+
+Reading in data and functions:
+```{r}
+# read in summary of marine debris data
+read_in_rawdata(rawdata_path = "raw_data/summary/", 
+                list_name = "summary_list") 
+
+# ppm data
+read_in_rawdata(rawdata_path = "raw_data/ppm/", 
+                list_name = "ppm_list") 
+```
+
+Clean up marine debris categories:
+
+Note: 
+-The Ocean Conservancy datacard changes from 2012 to 2013 so the trash categories are different hence writing out two separate data frames.
+```{r}
+# clean the list and make into a giant cleaned up data frame
+# assigns two data frames to global environment
+clean_summary_data(summary_list)
+```
+
+Cleanup marine debris metrics:
+```{r}
+# clean up PPM data (people, pounds, miles, # of bags)
+ppm <- clean_ppm_data(ppm_list)
+```
