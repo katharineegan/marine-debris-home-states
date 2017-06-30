@@ -1,5 +1,6 @@
 ---
-title: "Marine Debris by Home States"
+title: "Marine Debris by Home States or Territories"
+subtitle: "Ocean Conservancy International Coastal Cleanup (2008-2015)"
 author: "Katharine Egan"
 output: html_document
 ---
@@ -8,6 +9,9 @@ Libraries and functions:
 ```{r}
 library(tidyverse)
 library(readxl)
+library(cowplot)
+library(scales)
+library(RColorBrewer)
 
 # read in functions needed to clean data 
 source("scripts/functions/clean_summary_data.R")
@@ -43,20 +47,132 @@ Cleanup marine debris metrics:
 clean_ppm_data(ppm_list)
 ```
 
-Aggregate marine debris data by year and location (sum the total amount of debris), join the ppm data to the aggregated data frame, calculate debris density (pounds per mile), and calculate debris density per person (pounds per mile per person)
+Exploratory data analysis:
+-Debris density per person by location and year
 ```{r}
-# 2008-2012
-md_ppm_0812 <- md_0812 %>% group_by(year, location) %>% 
+# join all debris data with the PPM data 
+# make a kilograms and kilometer column (from pounds and miles)
+# calculate debris density (kg/km) 
+# calculate debris density per person (kg/km/person)
+md_ppm <- all_md %>% group_by(year, location) %>% 
   summarise(total_sum = sum(total)) %>% 
-  full_join(ppm_0812) %>% 
-  mutate(debris_density = total_sum/miles,
-         debris_density_person = debris_density/people)
+  full_join(all_ppm) %>% 
+  mutate(kg = pounds * 0.453592,
+         km = miles * 1.60934,
+         debris_density_kgkm = kg/km,
+         debris_density_lbsmi = pounds/miles,
+         pieces_mile = total_sum/miles)
 
-# 2013-2015
-md_ppm_1315 <- md_1315 %>% group_by(year, location) %>% 
-  summarise(total_sum = sum(total)) %>% 
-  full_join(ppm_1315) %>% 
-  mutate(debris_density = total_sum/miles,
-         debris_density_person = debris_density/people)
+# graph of debris density (pounds/mile) by location (boxplot)
+dd_lbsmi_loc <- ggplot(data = md_ppm,
+       aes(y=debris_density_lbsmi, x=location)) +
+  geom_boxplot(fill = "#80CDC1") +
+  geom_jitter(size = 2) +
+  scale_x_discrete(limits = c("PA", "RI", "NC", "USVI")) +
+  labs(y = "Debris Density (lbs/mile)",
+       x = "Home State/Territory") +
+  theme_classic() +
+  theme(text = element_text(size=12)) 
+
+# graph of pieces per mile by location (boxplot)
+dd_piecemi_loc <- ggplot(data = md_ppm,
+       aes(y=pieces_mile, x=location)) +
+  geom_boxplot(fill = "#8C510A") +
+  geom_jitter(size = 2) +
+  scale_x_discrete(limits = c("PA", "RI", "NC", "USVI")) +
+  labs(y = "Debris Per Mile",
+       x = "Home State/Territory") +
+  theme_classic() +
+  theme(text = element_text(size=12)) 
+
+# make a grid plot of debris density graphs 
+density_plot <- plot_grid(dd_lbsmi_loc, dd_piecemi_loc, align = "h", nrow = 1)
+
+# summarized data of both types of debris density by location 
+debris_location <- md_ppm %>% group_by(location) %>% 
+  summarise(mean_lbsmi = mean(debris_density_lbsmi),
+            sd_lbsmi = sd(debris_density_lbsmi),
+            count_lbsmi = length(debris_density_lbsmi),
+            se_lbsmi = sd(debris_density_lbsmi)/
+              sqrt(length(debris_density_lbsmi)),
+            mean_piecesmi = mean(pieces_mile),
+            sd_piecesmi = sd(pieces_mile),
+            count_piecesmi = length(pieces_mile),
+            se_piecesmi = sd(pieces_mile)/
+              sqrt(length(pieces_mile)))
 ```
 
+Graphs of people, pounds, pieces of debris, and miles by home state/territory:
+```{r}
+# people
+people <- ggplot(data = md_ppm,
+       aes(y=people, x=location)) +
+  geom_boxplot(fill = "#D7191C") +
+  labs(y = "People") +
+  scale_x_discrete(limits = c("PA", "RI","NC", "USVI")) +
+  scale_y_continuous(labels = comma) +
+  theme_classic() +
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_text(vjust=-0.8),
+        text = element_text(size=12))
+
+# pounds
+pounds <- ggplot(data = md_ppm,
+       aes(y=pounds, x=location)) +
+  geom_boxplot(fill = "#FDAE61") +
+  labs(y = "Pounds") +
+  scale_x_discrete(limits = c("PA", "RI","NC", "USVI")) +
+  scale_y_continuous(labels = comma) +
+  theme_classic() +
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_text(vjust=-0.8),
+        text = element_text(size=12))
+
+# miles
+miles <- ggplot(data = md_ppm,
+       aes(y=miles, x=location)) +
+  geom_boxplot(fill = "#ABDDA4") +
+  labs(y = "Miles") +
+  scale_x_discrete(limits = c("PA", "RI","NC", "USVI")) +
+  scale_y_continuous(labels = comma) +
+  theme_classic() +
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_text(vjust=-0.8),
+        text = element_text(size=12))
+
+# pieces of debris
+debris <- ggplot(data = md_ppm,
+       aes(y=total_sum, x=location)) +
+  geom_boxplot(fill = "#2B83BA") +
+  labs(y = "Total Debris Pieces") +
+  scale_x_discrete(limits = c("PA", "RI","NC", "USVI")) +
+  scale_y_continuous(labels = comma) +
+  theme_classic() +
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_text(vjust=-0.8),
+        text = element_text(size=12))
+
+# make one graph of all parts 
+all_md_locations <- plot_grid(people, pounds, miles, debris, ncol = 2,
+                          align = "vh")
+all_md_locations
+```
+
+Top 5 items found in each state or territory across all years: 
+```{r}
+# get top 5 items across 2008-2012
+top5_0812 <- md_0812 %>%
+  group_by(location, category) %>%
+  summarize(total = sum(total)) %>% 
+  arrange(desc(total)) %>%
+  slice(1:5) %>% 
+  mutate(years = "2008-2012")
+
+# get top 5 items across 2013-2015
+top5_1315 <- md_1315 %>%
+  group_by(location, category) %>%
+  summarize(total = sum(total)) %>% 
+  arrange(desc(total)) %>%
+  slice(1:5) %>% 
+  mutate(years = "2013-2015")
+```

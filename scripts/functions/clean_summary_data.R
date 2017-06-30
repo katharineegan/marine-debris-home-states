@@ -4,35 +4,39 @@ clean_summary_data <- function(list) {
   df <- do.call("rbind", list)
   
   # add a column that is the name of the data frame
-  df$df_name <- rep(names(list))
+  df$df_name <- rep(names(list), sapply(list, nrow))
   
   # use tidyverse to:
   # select specific columns
   # remove all rows that have NAs
   # remove all rows that contain certain words
-  # convert year to a factor
+  # convert year to a character
   # change column names while making categories column all lowercase
   # select specific rows
-  md_0812 <- df %>% 
-    filter(!grepl("Totals", `Categorized Items`),
-           !grepl("TOTAL", `Categorized Items`),
-           !grepl("REPORT", `Categorized Items`),
-           !is.na(`Total Items`)) %>% 
+  # make location upper case
+  md <- df %>% 
     mutate(category = tolower(`Categorized Items`),
            df_name = gsub("Summary", "", df_name)) %>%
-    separate(df_name, into = c("location", "year"), sep="_") %>% 
-    mutate(year = as.factor(year)) %>% 
     rename(total = `Total Items`) %>% 
+    separate(df_name, into = c("location", "year"), sep="_") %>% 
+    filter(!grepl("totals", category),
+           !grepl("total", category),
+           !is.na(total)) %>% 
+    mutate(year = as.character(year),
+           location = toupper(location)) %>% 
     select(location, year, category, total)
   
-  # subset out 2013-2015 data and make it's own data frame
-  md_1315 <- md_0812[md_0812$year %in% c(2013, 2014, 2015), ]
+  # assign all md to global environment
+  assign("all_md", md, env = .GlobalEnv)
   
-  # delete 2013-2015 from the orignial data 
-  md_0812 <- md_0812[!md_0812$year %in% c(2013, 2014, 2015), ]
+  # filter out 2008-2012 data
+  md_0812 <- md %>% filter(year %in% c("2008", "2009", "2010", "2011", "2012"))
   
   # assign 2008-2012 data frame to global env
   assign("md_0812", md_0812, env = .GlobalEnv)
+  
+  # filter out 2008-2012 data
+  md_1315 <- md %>% filter(year %in% c("2013", "2014", "2015"))
   
   # assign data 2013-2015 data frame to global env
   assign("md_1315", md_1315, env = .GlobalEnv)
