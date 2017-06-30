@@ -12,6 +12,7 @@ library(readxl)
 library(cowplot)
 library(scales)
 library(RColorBrewer)
+library(xlsx)
 
 # read in functions needed to clean data 
 source("scripts/functions/clean_summary_data.R")
@@ -30,13 +31,11 @@ read_in_rawdata(rawdata_path = "raw_data/ppm/",
                 list_name = "ppm_list") 
 ```
 
-Clean up marine debris categories:
+#### Clean data
 
-Note: 
--The Ocean Conservancy datacard changes from 2012 to 2013 so the trash categories are different hence writing out two separate data frames.
+Clean up marine debris categories:
 ```{r}
-# clean the list and make into a giant cleaned up data frame
-# assigns two data frames to global environment
+# assigns three data frames to global environment
 clean_summary_data(summary_list)
 ```
 
@@ -47,8 +46,9 @@ Cleanup marine debris metrics:
 clean_ppm_data(ppm_list)
 ```
 
-Exploratory data analysis:
--Debris density per person by location and year
+#### Visualizing the data
+
+Debris density per person by location and year
 ```{r}
 # join all debris data with the PPM data 
 # make a kilograms and kilometer column (from pounds and miles)
@@ -155,7 +155,6 @@ debris <- ggplot(data = md_ppm,
 # make one graph of all parts 
 all_md_locations <- plot_grid(people, pounds, miles, debris, ncol = 2,
                           align = "vh")
-all_md_locations
 ```
 
 Top 5 items found in each state or territory across all years: 
@@ -174,5 +173,11 @@ top5_1315 <- md_1315 %>%
   summarize(total = sum(total)) %>% 
   arrange(desc(total)) %>%
   slice(1:5) %>% 
-  mutate(years = "2013-2015")
+  mutate(years = "2013-2015") 
+
+# cbind both data frames 
+top5 <- cbind(top5_0812, top5_1315)
+
+# write out excel sheet 
+write.xlsx(as.data.frame(top5), "top5.xlsx", row.names = FALSE)
 ```
