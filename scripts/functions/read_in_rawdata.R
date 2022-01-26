@@ -1,14 +1,15 @@
 read_in_rawdata <- function(rawdata_path, list_name) {
   
   # create list of all .xls files in folder
-  files <- list.files(path=rawdata_path, pattern="*.xls")
+  files <- list.files(path=paste0(getwd(),"/raw_data/summary/"), pattern="*.xls", 
+                      full.names = T)
   
   # create an empty list 
   df_list <- list()
   
   # read all excel files into list
   for (i in seq_along(files)) {
-    df_list[[i]] <- read_excel(paste(rawdata_path, file = files[i], sep=""))
+    df_list[[i]] <- read_excel(files[i])
   }
   
   # name all the files with the names of the excel sheets

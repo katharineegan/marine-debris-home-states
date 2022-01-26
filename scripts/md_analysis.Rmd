@@ -12,7 +12,7 @@ library(readxl)
 library(cowplot)
 library(scales)
 library(RColorBrewer)
-library(xlsx)
+library(writexl)
 
 # read in functions needed to clean data 
 source("scripts/functions/clean_summary_data.R")
@@ -23,11 +23,11 @@ source("scripts/functions/read_in_rawdata.R")
 Reading in data and functions:
 ```{r}
 # read in summary of marine debris data
-read_in_rawdata(rawdata_path = "raw_data/summary/", 
+read_in_rawdata(rawdata_path = paste0(getwd(),"/raw_data/summary/"), 
                 list_name = "summary_list") 
 
 # ppm data
-read_in_rawdata(rawdata_path = "raw_data/ppm/", 
+read_in_rawdata(rawdata_path = paste0(getwd(),"/raw_data/ppm/"), 
                 list_name = "ppm_list") 
 ```
 
